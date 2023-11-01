@@ -6,6 +6,8 @@ Authors: João M. Cordeiro Pereira, Sebastian Schwegmann, Clàudia Massó Estaje
 
 Last updated: 1. Nov 2023
 
+This README file explains which data files are available, which are necessary to run the analysis R script, and provides metadata about all variables contained in those data files
+
 ------ Files available --------------------------------
 - R script (carabidae_script.r)
 - two files read by R script: all plot-level data (alldata_carabids_df.csv) and carabid traits and classifications (carabid_traits.csv)
