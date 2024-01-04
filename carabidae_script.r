@@ -1,4 +1,4 @@
-# Paper title: Specialist carabid beetles in mixed montane forests show positive links to roe deer and to biodiversity-oriented forestry
+# Manuscript title: Specialist carabid beetles in mixed montane forests show positive links to roe deer and to biodiversity-oriented forestry
 # Authors: João M. Cordeiro Pereira, Sebastian Schwegmann, Clàudia Massó, Martin Denter, Grzegorz Mikusinski, Ilse Storch
 # code written by: João M. Cordeiro Pereira
 
@@ -84,10 +84,6 @@ head(all_data_carabids)
 
 sum(all_data_carabids$carabidae_n) # total number of Carabidae specimens
 
-# add plot-level species richness (carabid_sr)
-names(all_data_carabids) # first check column indices
-all_data_carabids <- all_data_carabids %>% dplyr::mutate(carabid_sr = rowSums(.[9:49] > 0))
-
 # import data with functional group classification, and check data structure
 carabid_traits <- read.table("carabid_traits.csv", sep = ",", header = TRUE)
 head(carabid_traits)
@@ -98,6 +94,10 @@ sp_monspec <- carabid_traits$species[carabid_traits$montane_specialist == "yes"]
 sp_brachy <- carabid_traits$species[carabid_traits$flight == "brachypterous"]
 sp_large <- carabid_traits$species[carabid_traits$body_length > 22]
 sp_nonfor <- carabid_traits$species[carabid_traits$forest_specialist == "no"] # non-forest species (for section 5)
+
+# add plot-level species richness (carabid_sr)
+names(all_data_carabids) # first check column indices
+all_data_carabids <- all_data_carabids %>% dplyr::mutate(carabid_sr = rowSums(.[9:49] > 0))
 
 # for forest species, forest specialists, montane specialists and brachypterous species, calculate abundance and species richness
 all_data_carabids <- all_data_carabids %>%
@@ -178,7 +178,9 @@ hist(all_data_carabids$carabid_large_n, breaks = 15) # Activity-density of large
 hist(all_data_carabids$carabid_monspec_n, breaks = 15) # Activity-density of montane specialist carabids
 hist(all_data_carabids$carabid_monspec_sr, breaks = 15) # Species richness of montane specialist carabids
 hist(all_data_carabids$cwm) # Community-weighted mean of body size
+shapiro.test(all_data_carabids$cwm) # no significant deviation from normality
 hist(all_data_carabids$cwv) # Community-weighted variance of body size
+shapiro.test(all_data_carabids$cwv) # no significant deviation from normality
 
 # check whether cwm and cwv are correlated
 cor.test(all_data_carabids$cwm, all_data_carabids$cwv, method = "pearson")
@@ -431,12 +433,34 @@ m8 <- lm(cwm ~  avg_alt_stdr + roe_deer_stdr + canopycover_stdr + pc_broadleaf_s
 summary(m8)
 par(mfrow = c(2,2))
 plot(m8)
+par(mfrow = c(1,1))
+simulation_m8 <- simulateResiduals(m8, n = 1000, plot = TRUE) # QQ plot and uniformity of residuals (residuals vs. fitted)
+# then residuals vs. each of the predictors
+plotResiduals(simulation_m8, form = all_data_carabids$avg_alt_stdr)
+plotResiduals(simulation_m8, form = all_data_carabids$roe_deer_stdr)
+plotResiduals(simulation_m8, form = all_data_carabids$canopycover_stdr)
+plotResiduals(simulation_m8, form = all_data_carabids$pc_broadleaf_stdr)
+plotResiduals(simulation_m8, form = all_data_carabids$DBHMean_stdr)
+plotResiduals(simulation_m8, form = all_data_carabids$lying_dw_volume_stdr)
+testDispersion(simulation_m8) # test for remaining overdispersion
+testOutliers(simulation_m8) # test for outliers
+testZeroInflation(simulation_m8) # test for zero-inflation
 
 # run linear model for CWV body size
 m9 <- lm(cwv ~  avg_alt_stdr + roe_deer_stdr + canopycover_stdr + pc_broadleaf_stdr + DBHMean_stdr + lying_dw_volume_stdr + trapdays, data = all_data_carabids, na.action = "na.fail")
 summary(m9)
 plot(m9)
-par(mfrow = c(1,1))
+simulation_m9 <- simulateResiduals(m9, n = 1000, plot = TRUE) # QQ plot and uniformity of residuals (residuals vs. fitted)
+# then residuals vs. each of the predictors
+plotResiduals(simulation_m9, form = all_data_carabids$avg_alt_stdr)
+plotResiduals(simulation_m9, form = all_data_carabids$roe_deer_stdr)
+plotResiduals(simulation_m9, form = all_data_carabids$canopycover_stdr)
+plotResiduals(simulation_m9, form = all_data_carabids$pc_broadleaf_stdr)
+plotResiduals(simulation_m9, form = all_data_carabids$DBHMean_stdr)
+plotResiduals(simulation_m9, form = all_data_carabids$lying_dw_volume_stdr)
+testDispersion(simulation_m9) # test for remaining overdispersion
+testOutliers(simulation_m9) # test for outliers
+testZeroInflation(simulation_m9) # test for zero-inflation
 
 #----- 7. Plot significant modelled relationships  (with ggplot2) -------------------------------------------------
 
@@ -614,7 +638,7 @@ ggmonsr_dw <- ggplot(all_data_carabids, aes(x = lying_dw_volume_tf, y = carabid_
   labs(x = "Lying deadwood volume (m3, log scale)", y = "Montane SR") +
   geom_line(aes(x = x*sd_dw + mean_dw, y = predicted), data = predicted_df5_dw, colour = "darkgreen", linewidth = 0.8) +
   geom_ribbon(aes(x = x*sd_dw + mean_dw, y = predicted, ymin = conf.low, ymax = conf.high), data = predicted_df5_dw, alpha = 0.1) +
-  scale_x_continuous(breaks = c(log(10), log(20), log(30), log(40), log(50), log(100), log(150), log(200), log(300)), labels = exp) + #adjust X axis labels to invert log transformation
+  scale_x_continuous(breaks = c(log(10), log(20), log(40), log(80), log(160), log(300)), labels = exp) + #adjust X axis labels to invert log transformation
   theme_cowplot()
 ggmonsr_dw
 
